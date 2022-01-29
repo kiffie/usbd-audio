@@ -1,0 +1,29 @@
+[package]
+name = "usb-audio"
+version = "0.1.0"
+authors = ["Kiffie van Haash"]
+license = "MIT"
+edition = "2021"
+
+[features]
+
+[dependencies]
+cortex-m = "0.7.3"
+cortex-m-rt = "0.7.0"
+rp2040-hal = { version="0.3.0", features=["rt"] }
+rp2040-boot2 = "0.2.0"
+embedded-hal = "0.2.6"
+panic-halt = "0.2.0"
+usb-device = { version = "0.2.8", features = ["control-buffer-256"] }
+usbd-audio = { path = "../.." }
+
+log = "0.4.14"
+
+[profile.release]
+opt-level = 2
+lto = true
+debug = true
+
+[profile.dev]
+opt-level = 2
+lto = true
