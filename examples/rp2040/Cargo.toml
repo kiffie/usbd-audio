@@ -15,7 +15,7 @@ rp2040-boot2 = "0.2.0"
 embedded-hal = "0.2.6"
 panic-halt = "0.2.0"
 usb-device = { version = "0.2.8", features = ["control-buffer-256"] }
-usbd-audio = { path = "../.." }
+usbd-audio = "0.1.0"
 
 log = "0.4.14"
 
