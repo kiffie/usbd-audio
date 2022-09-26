@@ -8,9 +8,9 @@
 #![no_main]
 #![feature(alloc_error_handler)]
 
-use alloc_pic32::Pic32Heap;
 use core::fmt::Write;
 use embedded_hal::{blocking::delay::DelayMs, digital::v2::*};
+use mips_mcu_alloc::MipsMcuHeap;
 use mips_rt::entry;
 use panic_halt as _;
 use pic32_config_sector::pic32mx2xx::*;
@@ -53,14 +53,12 @@ pub static CONFIGSFRS: ConfigSector = ConfigSector::default()
     .build();
 
 #[global_allocator]
-static ALLOCATOR: Pic32Heap = Pic32Heap::empty();
+static ALLOCATOR: MipsMcuHeap = MipsMcuHeap::empty();
 
 #[entry]
 fn main() -> ! {
     // Initialize the allocator BEFORE you use it
-    let start = mips_rt::heap_start() as usize;
-    let size = 8192; // in bytes
-    unsafe { ALLOCATOR.init(start, size) }
+    ALLOCATOR.init();
 
     let p = pac::Peripherals::take().unwrap();
     let parts = p.PORTB.split();
@@ -132,8 +130,8 @@ fn main() -> ! {
                 }
             }
         }
-        if input_alt_setting  != usb_audio.input_alt_setting().unwrap() ||
-           output_alt_setting != usb_audio.output_alt_setting().unwrap()
+        if input_alt_setting != usb_audio.input_alt_setting().unwrap()
+            || output_alt_setting != usb_audio.output_alt_setting().unwrap()
         {
             input_alt_setting = usb_audio.input_alt_setting().unwrap();
             output_alt_setting = usb_audio.output_alt_setting().unwrap();
