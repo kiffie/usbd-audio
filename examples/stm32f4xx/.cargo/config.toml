@@ -1,0 +1,10 @@
+[build]
+target = "thumbv7em-none-eabi"
+
+[target.'cfg(all(target_arch = "arm", target_os = "none"))']
+runner = "probe-run --chip STM32f411RE"
+
+rustflags = [
+    "-C", "link-arg=--nmagic",
+    "-C", "link-arg=-Tlink.x",
+]
