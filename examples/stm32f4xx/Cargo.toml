@@ -1,0 +1,19 @@
+[package]
+name = "usb-audio"
+version = "0.1.0"
+authors = ["Kiffie van Haash", "Josef Utbult"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+
+[dependencies]
+embedded-hal = "0.2.3"
+panic-halt = "0.2.0"
+cortex-m = "0.6"
+cortex-m-rt = "0.7.3"
+
+stm32f4xx-hal = { version = "0.15.0", features = ["stm32f411", "rt", "usb_fs"] }
+usb-device = { version = "0.2.8", features = ["control-buffer-256"] }
+usbd-audio = "0.1.0"
+
+# Tracing
+rtt-target = { version = "0.3.0", features = ["cortex-m"] }
