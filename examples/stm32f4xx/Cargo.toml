@@ -2,7 +2,7 @@
 name = "usb-audio"
 version = "0.1.0"
 authors = ["Kiffie van Haash", "Josef Utbult"]
-license = "MIT"
+license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [dependencies]
