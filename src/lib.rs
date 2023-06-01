@@ -342,7 +342,7 @@ impl<'a> AudioClassBuilder<'a> {
     }
 
     /// Configure the output audio stream according to a `StreamConfig`.
-    /// At most one input stream can be configured. When calling this method
+    /// At most one output stream can be configured. When calling this method
     /// multiple times, the last call matters.
     pub fn output(self, output: StreamConfig<'a>) -> AudioClassBuilder<'a> {
         AudioClassBuilder {
