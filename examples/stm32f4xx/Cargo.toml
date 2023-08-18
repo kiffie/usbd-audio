@@ -17,3 +17,8 @@ usbd-audio = "0.1.0"
 
 # Tracing
 rtt-target = { version = "0.3.0", features = ["cortex-m"] }
+
+# Patch to counteract problem where STM32 based targets drops every
+# second frame of samples
+[patch.crates-io]
+synopsys-usb-otg = { git = "https://github.com/kiffie/synopsys-usb-otg.git", branch = "iso-ep" }
