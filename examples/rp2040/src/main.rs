@@ -103,7 +103,7 @@ fn main() -> ! {
 
     let string_descriptor = StringDescriptors::new(LangID::EN_US)
         .manufacturer("Kiffie Labs")
-        .product("Audio port - Hammernet")
+        .product("Audio port")
         .serial_number("42");
 
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
