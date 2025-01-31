@@ -5,10 +5,12 @@ use cortex_m_rt::entry;
 use panic_halt as _;
 
 use stm32f4xx_hal::otg_fs::{UsbBus, USB};
+use stm32f4xx_hal::gpio::alt::otg_fs::{Dm, Dp};
 use stm32f4xx_hal::{pac, prelude::*};
 
-use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
-use usbd_audio::{AudioClassBuilder, StreamConfig, TerminalType, Format};
+use usb_device::device::{StringDescriptors, UsbDeviceBuilder, UsbVidPid};
+use usb_device::LangID;
+use usbd_audio::{AudioClassBuilder, Format, StreamConfig, TerminalType};
 
 use rtt_target::{rprintln, rtt_init_print};
 
@@ -36,33 +38,40 @@ fn main() -> ! {
         usb_global: dp.OTG_FS_GLOBAL,
         usb_device: dp.OTG_FS_DEVICE,
         usb_pwrclk: dp.OTG_FS_PWRCLK,
-        pin_dm: gpioa.pa11.into_alternate(),
-        pin_dp: gpioa.pa12.into_alternate(),
+        pin_dm: Dm::PA11(gpioa.pa11.into_alternate()),
+        pin_dp: Dp::PA12(gpioa.pa12.into_alternate()),
         hclk: clocks.hclk(),
     };
 
     let usb_bus = UsbBus::new(usb, unsafe { &mut EP_MEMORY });
 
-	let mut usb_audio = AudioClassBuilder::new()
+    let mut usb_audio = AudioClassBuilder::new()
         .input(
-            StreamConfig::new_discrete(
-                Format::S16le,
-                1,
-                &[48000],
-                TerminalType::InMicrophone).unwrap())
+            StreamConfig::new_discrete(Format::S16le, 1, &[48000], TerminalType::InMicrophone)
+                .unwrap(),
+        )
         .output(
             StreamConfig::new_discrete(
                 Format::S24le,
                 2,
                 &[44100, 48000, 96000],
-                TerminalType::OutSpeaker).unwrap())
+                TerminalType::OutSpeaker,
+            )
+            .unwrap(),
+        )
         .build(&usb_bus)
         .unwrap();
 
-    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
+    let string_descriptor = StringDescriptors::new(LangID::EN_US)
         .manufacturer("Josef Labs")
         .product("USB audio test")
-        .serial_number("42")
+        .serial_number("42");
+
+    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
+        .max_packet_size_0(64)
+        .unwrap()
+        .strings(&[string_descriptor])
+        .unwrap()
         .build();
 
     let sinetab = [
@@ -87,8 +96,8 @@ fn main() -> ! {
                 }
             }
         }
-        if input_alt_setting  != usb_audio.input_alt_setting().unwrap() ||
-           output_alt_setting != usb_audio.output_alt_setting().unwrap()
+        if input_alt_setting != usb_audio.input_alt_setting().unwrap()
+            || output_alt_setting != usb_audio.output_alt_setting().unwrap()
         {
             input_alt_setting = usb_audio.input_alt_setting().unwrap();
             output_alt_setting = usb_audio.output_alt_setting().unwrap();
@@ -97,3 +106,4 @@ fn main() -> ! {
         usb_audio.write(sinetab_le).ok();
     }
 }
+
