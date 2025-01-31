@@ -11,4 +11,4 @@ license = "MIT OR Apache-2.0"
 include = ["README.md", "/src", "LICENSE"]
 
 [dependencies]
-usb-device = "0.2.8"
+usb-device = "0.3"
