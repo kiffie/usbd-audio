@@ -8,14 +8,15 @@ edition = "2021"
 [features]
 
 [dependencies]
+critical-section = "1.2"
 cortex-m = "0.7.3"
 cortex-m-rt = "0.7.0"
-rp2040-hal = { version="0.3.0", features=["rt"] }
+rp2040-hal = { version = "0.11", features = ["rt", "critical-section-impl"] }
 rp2040-boot2 = "0.2.0"
 embedded-hal = "0.2.6"
 panic-halt = "0.2.0"
-usb-device = { version = "0.2.8", features = ["control-buffer-256"] }
-usbd-audio = "0.1.0"
+usb-device = { version = "0.3", features = ["control-buffer-256"] }
+usbd-audio = { path = "../.." }
 
 log = "0.4.14"
 

@@ -12,13 +12,17 @@ use panic_halt as _;
 
 use embedded_hal::digital::v2::OutputPin;
 use hal::{
-    clocks::init_clocks_and_plls, pac, sio::Sio, usb::UsbBus,
-    watchdog::Watchdog, uart::{self, UartPeripheral},
+    clocks::init_clocks_and_plls,
     gpio::FunctionUart,
+    pac,
+    sio::Sio,
+    uart::{self, UartPeripheral},
+    usb::UsbBus,
+    watchdog::Watchdog,
 };
-use rp2040_hal as hal;
+use rp2040_hal::{self as hal, Clock};
 
-use usb_device::{class_prelude::UsbBusAllocator};
+use usb_device::class_prelude::UsbBusAllocator;
 
 use usb_device::prelude::*;
 use usbd_audio::{AudioClassBuilder, Format, StreamConfig, TerminalType};
@@ -32,7 +36,6 @@ pub static BOOT_LOADER: [u8; 256] = rp2040_boot2::BOOT_LOADER_W25Q080;
 
 #[entry]
 fn main() -> ! {
-
     let mut pac = pac::Peripherals::take().unwrap();
     let mut watchdog = Watchdog::new(pac.WATCHDOG);
     let sio = Sio::new(pac.SIO);
@@ -58,17 +61,16 @@ fn main() -> ! {
         &mut pac.RESETS,
     );
 
-    let mut uart = UartPeripheral::<_, _>::new(pac.UART1, &mut pac.RESETS)
-    .enable(
-        uart::common_configs::_115200_8_N_1,
-        clocks.peripheral_clock.into(),
-    )
-    .unwrap();
-    let _tx_pin = pins.gpio4.into_mode::<FunctionUart>();
-    let _rx_pin = pins.gpio5.into_mode::<FunctionUart>();
+    let tx_pin = pins.gpio4.into_function::<FunctionUart>();
+    let rx_pin = pins.gpio5.into_function::<FunctionUart>();
+    let mut uart = UartPeripheral::<_, _, _>::new(pac.UART1, (tx_pin, rx_pin), &mut pac.RESETS)
+        .enable(
+            uart::common_configs::_115200_8_N_1,
+            clocks.peripheral_clock.freq(),
+        )
+        .unwrap();
 
     writeln!(uart, "USB audio test").unwrap();
-
 
     let mut led_pin = pins.gpio11.into_push_pull_output();
     led_pin.set_high().unwrap();
@@ -84,25 +86,31 @@ fn main() -> ! {
 
     let mut usb_audio = AudioClassBuilder::new()
         .input(
-            StreamConfig::new_discrete(
-                Format::S16le,
-                1,
-                &[48000],
-                TerminalType::InMicrophone).unwrap())
+            StreamConfig::new_discrete(Format::S16le, 1, &[48000], TerminalType::InMicrophone)
+                .unwrap(),
+        )
         .output(
             StreamConfig::new_discrete(
                 Format::S24le,
                 2,
                 &[44100, 48000, 96000],
-                TerminalType::OutSpeaker).unwrap())
+                TerminalType::OutSpeaker,
+            )
+            .unwrap(),
+        )
         .build(&usb_bus)
         .unwrap();
 
+    let string_descriptor = StringDescriptors::new(LangID::EN_US)
+        .manufacturer("Kiffie Labs")
+        .product("Audio port - Hammernet")
+        .serial_number("42");
+
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
         .max_packet_size_0(64)
-        .manufacturer("Kiffie Labs")
-        .product("Audio port")
-        .serial_number("42")
+        .unwrap()
+        .strings(&[string_descriptor])
+        .unwrap()
         .build();
 
     let sinetab = [
@@ -127,12 +135,17 @@ fn main() -> ! {
                 }
             }
         }
-        if input_alt_setting  != usb_audio.input_alt_setting().unwrap() ||
-           output_alt_setting != usb_audio.output_alt_setting().unwrap()
+        if input_alt_setting != usb_audio.input_alt_setting().unwrap()
+            || output_alt_setting != usb_audio.output_alt_setting().unwrap()
         {
             input_alt_setting = usb_audio.input_alt_setting().unwrap();
             output_alt_setting = usb_audio.output_alt_setting().unwrap();
-            writeln!(uart, "Alt. set. {} {}", input_alt_setting, output_alt_setting).unwrap();
+            writeln!(
+                uart,
+                "Alt. set. {} {}",
+                input_alt_setting, output_alt_setting
+            )
+            .unwrap();
         }
         usb_audio.write(sinetab_le).ok();
     }
