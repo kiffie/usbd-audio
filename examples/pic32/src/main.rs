@@ -1,7 +1,7 @@
 //! Simple USB Audio example for PIC32MX270 (28 pins)
 //!
 //! Simulates a microphone that emits a 1 kHz tone and a dummy audio output and
-//! prints the payload length of each thousand received audio frame an reports
+//! prints the payload length of each thousand received audio frame and reports
 //! changes of the alternate settings.
 //!
 #![no_std]
@@ -9,7 +9,7 @@
 #![feature(alloc_error_handler)]
 
 use core::fmt::Write;
-use embedded_hal::{blocking::delay::DelayMs, digital::v2::*};
+use embedded_hal::{delay::DelayNs, digital::OutputPin};
 use mips_mcu_alloc::MipsMcuHeap;
 use mips_rt::entry;
 use panic_halt as _;
@@ -22,7 +22,7 @@ use pic32_hal::{
     pps::{MapPin, NoPin, PpsExt},
     pps_no_pin,
     time::U32Ext,
-    uart::Uart,
+    uart::{Uart, CONFIG_115200_8N1},
     usb::UsbBus,
 };
 use usb_device::prelude::*;
@@ -72,9 +72,8 @@ fn main() -> ! {
         .rb0
         .into_push_pull_output()
         .map_pin(vpins.outputs.u2tx);
-    //let rxd = NoPin::new().map_pin(vpins.inputs.u2rx);
     let rxd = pps_no_pin!(vpins.inputs.u2rx);
-    let uart = Uart::uart2(p.UART2, &clock, 115200, rxd, txd);
+    let uart = Uart::uart2(p.UART2, &clock, CONFIG_115200_8N1, rxd, txd);
 
     timer.delay_ms(10u32);
     let (mut tx, _) = uart.split();
@@ -103,12 +102,15 @@ fn main() -> ! {
 
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
         .max_packet_size_0(64)
-        .manufacturer("Kiffie Labs")
-        .product("Audio port")
-        .serial_number("42")
+        .unwrap()
+        .strings(&[StringDescriptors::new(LangID::EN)
+            .manufacturer("Kiffie Labs")
+            .product("Audio port")
+            .serial_number("42")])
+        .unwrap()
         .build();
 
-    let sinetab = [
+    let sinetab: [i16; 48] = [
         0i16, 4276, 8480, 12539, 16383, 19947, 23169, 25995, 28377, 30272, 31650, 32486, 32767,
         32486, 31650, 30272, 28377, 25995, 23169, 19947, 16383, 12539, 8480, 4276, 0, -4276, -8480,
         -12539, -16383, -19947, -23169, -25995, -28377, -30272, -31650, -32486, -32767, -32486,
