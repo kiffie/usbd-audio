@@ -85,12 +85,12 @@ impl StreamConfig<'_> {
     /// indicated in samples/second. An input stream or an output stream will
     /// have an Input Terminal or Output Terminal of Terminal Type
     /// `terminal_type`, respectively.
-    pub fn new_discrete<'a>(
+    pub fn new_discrete(
         format: Format,
         channels: u8,
-        rates: &'a [u32],
+        rates: &'_ [u32],
         terminal_type: TerminalType,
-    ) -> Result<StreamConfig<'a>> {
+    ) -> Result<StreamConfig<'_>> {
         let max_rate = rates.iter().max().unwrap();
         let ep_size = Self::ep_size(format, channels, *max_rate)?;
         let rates = Rates::Discrete(rates);
@@ -183,7 +183,7 @@ macro_rules! append_u24le {
     };
 }
 
-impl<'a, B: UsbBus, D: EndpointDirection> AudioStream<'a, B, D> {
+impl<B: UsbBus, D: EndpointDirection> AudioStream<'_, B, D> {
     fn write_ac_descriptors(&self, writer: &mut DescriptorWriter) -> usb_device::Result<()> {
         let is_input = self.endpoint.address().direction() == UsbDirection::In;
         let terminal_type: u16 = self.stream_config.terminal_type.into();
@@ -525,7 +525,6 @@ impl<B: UsbBus> UsbClass<B> for AudioClass<'_, B> {
             if let Some(info) = self.output.as_ref() {
                 if iface == info.interface.into() {
                     xfer.accept_with(&[info.alt_setting]).ok();
-                    return;
                 }
             }
         }
@@ -551,7 +550,6 @@ impl<B: UsbBus> UsbClass<B> for AudioClass<'_, B> {
                 if iface == info.interface.into() {
                     info.alt_setting = alt_setting as u8;
                     xfer.accept().ok();
-                    return;
                 }
             }
         }
