@@ -459,9 +459,6 @@ impl<B: UsbBus> UsbClass<B> for AudioClass<'_, B> {
         &self,
         writer: &mut DescriptorWriter,
     ) -> usb_device::Result<()> {
-        writer.interface(self.control_iface, AUDIO, AUDIOCONTROL, 0x00)?;
-
-        // write Class-specific Audio Control (AC) Interface Descriptors
         let mut in_collection = 0u8;
         if self.input.is_some() {
             in_collection += 1;
@@ -469,6 +466,19 @@ impl<B: UsbBus> UsbClass<B> for AudioClass<'_, B> {
         if self.output.is_some() {
             in_collection += 1;
         }
+
+        writer.iad(
+            self.control_iface,
+            in_collection + 1, // Number of interfaces: control + streaming
+            AUDIO,             // bFunctionClass
+            AUDIOCONTROL,
+            0x00, // bFunctionProtocol
+            None, // iFunction
+        )?;
+
+        // write Class-specific Audio Control (AC) Interface Descriptors
+        writer.interface(self.control_iface, AUDIO, AUDIOCONTROL, 0x00)?;
+
         let total_length = 8u16 + (1 + 21) * in_collection as u16;
 
         let mut ac_header = [
