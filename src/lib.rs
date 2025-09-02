@@ -197,6 +197,16 @@ impl<B: UsbBus, D: EndpointDirection> AudioStream<'_, B, D> {
         }
         .to_le_bytes();
 
+        // Calculate wChannelConfig based on channel count
+        let channel_config = match self.stream_config.channels {
+            1 => 0x0001u16, // L
+            2 => 0x0003u16, // L+R
+            4 => 0x0033u16, // L+R+LS+RS
+            6 => 0x003Fu16, // L+R+C+LFE+LS+RS
+            8 => 0x00FFu16, // L+R+C+LFE+LS+RS+LC+RC
+            _ => 0x0003u16, // Default to stereo for unsupported counts
+        };
+
         writer.write(
             CS_INTERFACE,
             &[
@@ -206,8 +216,8 @@ impl<B: UsbBus, D: EndpointDirection> AudioStream<'_, B, D> {
                 tt[1],
                 0x00,                        // bAssocTerminal
                 self.stream_config.channels, // bNrChannels
-                0x03,
-                0x00, // wChannelConfig: Left Front and Right Front
+                (channel_config & 0xFF) as u8,
+                (channel_config >> 8) as u8, // wChannelConfig
                 0x00, // iChannelNames
                 0x00, // iTerminal
             ],
